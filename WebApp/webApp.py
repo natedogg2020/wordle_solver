@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 '''
-
+Setting up windows venv for VSCode
 $ py -3.9 -m venv .venv
 $ /venv/Scripts/activate.bat
 $ code .
@@ -54,60 +54,77 @@ def initValues():
     all_lines = all_w.readlines()
     foundSol = False
 
+    # Print any repeat words, since repeats will break the search
     for i in range(len(lines)-1):
         if(lines[i] == lines[i + 1]):
-            print(lines[i])
+            print("Warning, repeat word: ", lines[i])
+
     min_wc = 100000
     chosen_word = ""
+    # Selected Remaining Matches dictionary
     srmat = {}
     all_it = ["aesir"]
 
+#   Input SOARE into dictionary
+    # for SOARE, so 1 loop (should remove)
     for w1 in all_it:
+        #Remove whitespaces
         w1 = w1.strip()
         mat = {}
         rmat = {}
+        # For every word in word list
         for w2 in lines:
+            #Remove whitespaces
             w2 = w2.strip()
+            # Calculate an array of 0/1/2 to look for possible words
             msum = calc_response_vector(w1,w2)
+            # add or append w2 into rmat (remaining matches) dictionary 
+            # so that once we get feedback, we can narrow down the list 
+            # of words to check.
             if tuple(msum) not in rmat:
                 rmat[tuple(msum)] = [w2]
             else:
                 rmat[tuple(msum)].append(w2)
             mat[tuple([w1,w2])] = msum
 
+        # check for which of remaining values is the best choice
         M = max([len(val) for val in rmat.values()])
+        # New best choice, so update values
         if M < min_wc:
-            min_wc = M
-            chosen_word = w1
-            srmat = rmat
+            min_wc = M  #Set new best choice val
+            chosen_word = w1  # choose this current word
+            srmat = rmat  # Narrow down remaining values
 
     round = 1
-
-# f = open("words.txt","r")
-# all_w = open("words.txt","r")
-
-# f = open("NewWord.txt","r")
-# all_w = open("NewWord.txt","r")
-
-# lines = f.readlines()
-# all_lines = all_w.readlines()
-
 
 
 from functools import lru_cache
 
+'''
+    calc_response_vector is used to predetermine the remaining matches possible
+    through creating an array called msum, which is essentially a replication
+    of wordle's logic to decide if a letter in a word is yellow, green, or gray
+    in respect to the target word.
+    w2 is the target word, while w1 is to be checked against w2.
+'''
 @lru_cache(maxsize=None)
 def calc_response_vector(w1,w2):
-    tw2 = w2
-    msum = [0 for i in range(5)]
+    tw2 = w2    # Temp word
+    msum = [0 for i in range(5)]    # [0, 0, 0, 0, 0]
+    # Check if w1 and w2 have exactly the same letter placement
     for c_ind in range(5):
+        # Same letter, so put a 2 to signify a green
         if w1[c_ind] == tw2[c_ind]:
             msum[c_ind] = 2
+            # Now replace this letter with a * so it isn't counted twice
             tw2 = tw2[:c_ind] + "*" + tw2[c_ind+1:]
+    # Now check for any yellows
     for c_ind in range(5):
+        # The temp word2 contains w1 letter and it's not already green, so set it to yellow
         if w1[c_ind] in tw2 and msum[c_ind] == 0:
             msum[c_ind] = 1
-            ind_app = tw2.find(w1[c_ind])
+            # Now replace this letter with a * so it isn't counted twice
+            ind_app = tw2.find(w1[c_ind]) # Finding index the yellow occurs to remove it from tempW2
             tw2 = tw2[:ind_app] + "*" + tw2[ind_app+1:]
     return msum
 
@@ -130,30 +147,22 @@ def add():
         if round != 0:
             all_it = all_lines
         else:
-            all_it = ["aesir"]
+            all_it = ["soare"]
 
-        
-        
-        # Make sure they are numbers too
-        # try:
+        # Get Grey,Yellow, Green from webpage input
         x = float(request.args['x'])
-        # y = float(request.args['y'])
         y = str( request.args['y'])
         a = y.split(',')
         b = []
         for st in a:
             b.append(int(st))
 
-        # except:
-        #     return "x and y should be numbers"
-        
         print(chosen_word)
-        # inp = input()
-        # print(type(inp))
-        print(type(a))
-        print(type(b))
+
         feedback = tuple([int(el) for el in y.split(',')])
+        # Narrow down possible remaining matches using the given feedback
         lines = srmat[feedback]
+        # Check if there is only 1 guess left, and send it back if it is
         if len(lines) == 1:
             print("Done. Final word is {}".format(lines[0]))
             chosen_word = lines[0]
@@ -166,7 +175,6 @@ def add():
             }
             foundSol = True
             return jsonify(result)
-            # exit(0)
         if(round > 5):
             print("Failed. Did not find word after 6 attempts")
         # Checking that both parameters have been supplied
@@ -179,37 +187,43 @@ def add():
                 }
                 return jsonify(result)
 
-        # for round in range(6):
-
-
+        #For every word in word list
         for w1 in all_it:
+            #Strip to make sure it's 5 letter words, no whitespace
             w1 = w1.strip()
+            # initialize dictionaries
             mat = {}
             rmat = {}
+            # For every word in possible remaining words
             for w2 in lines:
+                #Strip to make sure it's 5 letter words, no whitespace
                 w2 = w2.strip()
+                # Calculate an array of 0/1/2 to look for possible words
                 msum = calc_response_vector(w1,w2)
+                # Check if rmat has an entry for the gray/yellow/green 
+                # sequence for the current w1 and w2, and add or append 
+                # it to the word list.
                 if tuple(msum) not in rmat:
                     rmat[tuple(msum)] = [w2]
                 else:
                     rmat[tuple(msum)].append(w2)
                 mat[tuple([w1,w2])] = msum
 
+            # check for which of remaining values is the best choice
             M = max([len(val) for val in rmat.values()])
+            # New best choice, so update values
             if M < min_wc:
-                min_wc = M
-                chosen_word = w1
-                srmat = rmat
+                min_wc = M #Set new best choice val
+                chosen_word = w1 # choose this current word
+                srmat = rmat # Narrow down remaining values
             
-        
-
         result = { 
             'type': 'result', 
             'newGuess':  chosen_word, 
-            'content2':  b, 
+            'content2':  b, # array acknowledging letter matches
             'status': 'REQUEST_OK'
         }   
-        round = round +1
+        round = round +1    # Increment round
         return jsonify(result)
     else:
         return jsonify(result = { 
