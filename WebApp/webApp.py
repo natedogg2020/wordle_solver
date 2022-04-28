@@ -63,7 +63,7 @@ def initValues():
     chosen_word = ""
     # Selected Remaining Matches dictionary
     srmat = {}
-    all_it = ["aesir"]
+    all_it = ["soare"]
 
 #   Input SOARE into dictionary
     # for SOARE, so 1 loop (should remove)
